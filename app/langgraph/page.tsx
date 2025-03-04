@@ -12,6 +12,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Client, Message } from "@langchain/langgraph-sdk";
 
 const onError = (error: unknown) => {
+  console.log(error);
   toast.error("Failed to handle input", {
     description: error instanceof Error ? error.message : String(error),
   });

@@ -1,62 +1,71 @@
 import { NextRequest, NextResponse } from "next/server";
-import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+import { ChatPromptTemplate } from "@langchain/core/prompts";
+import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
+import { Chroma } from "@langchain/community/vectorstores/chroma";
+import { Document } from "@langchain/core/documents";
+import {
+  RunnableSequence,
+  RunnablePassthrough,
+} from "@langchain/core/runnables";
+import { StringOutputParser } from "@langchain/core/output_parsers";
 
-import { createClient } from "@supabase/supabase-js";
-import { SupabaseVectorStore } from "@langchain/community/vectorstores/supabase";
-import { OpenAIEmbeddings } from "@langchain/openai";
-
-export const runtime = "edge";
-
-// Before running, follow set-up instructions at
-// https://js.langchain.com/v0.2/docs/integrations/vectorstores/supabase
-
-/**
- * This handler takes input text, splits it into chunks, and embeds those chunks
- * into a vector store for later retrieval. See the following docs for more information:
- *
- * https://js.langchain.com/v0.2/docs/how_to/recursive_text_splitter
- * https://js.langchain.com/v0.2/docs/integrations/vectorstores/supabase
- */
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const text = body.text;
-
-  if (process.env.NEXT_PUBLIC_DEMO === "true") {
-    return NextResponse.json(
-      {
-        error: [
-          "Ingest is not supported in demo mode.",
-          "Please set up your own version of the repo here: https://github.com/langchain-ai/langchain-nextjs-template",
-        ].join("\n"),
-      },
-      { status: 403 },
-    );
-  }
+  const CHROMA_PATH = "chroma";
 
   try {
-    const client = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_PRIVATE_KEY!,
-    );
-
-    const splitter = RecursiveCharacterTextSplitter.fromLanguage("markdown", {
-      chunkSize: 256,
-      chunkOverlap: 20,
+    const embeddingFunction = new OpenAIEmbeddings({
+      apiKey: process.env.OPENAI_API_KEY,
+      openAIApiKey: process.env.OPENAI_API_KEY,
+    });
+    const vectorstore = new Chroma(embeddingFunction, {
+      url: CHROMA_PATH,
     });
 
-    const splitDocuments = await splitter.createDocuments([text]);
+    const retriever = vectorstore.asRetriever({
+      verbose: true,
+      k: 3,
+    });
 
-    const vectorstore = await SupabaseVectorStore.fromDocuments(
-      splitDocuments,
-      new OpenAIEmbeddings(),
+    const formatDocumentsAsString = (documents: Document[]) => {
+      return documents.map((document) => document.pageContent).join("\n\n");
+    };
+
+    const ragTemplate = `You are a Super Smash Brothers Melee frame data expert. You will use the provided context to generate answers to users questions. Refrain from answering with data other than what is provided in the context. Do not answer subjects outside of the context of Super Smash Brothers Melee
+
+    CONTEXT:
+    {context}`;
+
+    const prompt = ChatPromptTemplate.fromMessages([
+      ["system", ragTemplate],
+      ["human", "{question}"],
+    ]);
+
+    const model = new ChatOpenAI({
+      model: "gpt-4o-mini",
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
+    const chain = RunnableSequence.from([
       {
-        client,
-        tableName: "documents",
-        queryName: "match_documents",
+        context: retriever.pipe(formatDocumentsAsString),
+        question: new RunnablePassthrough(),
       },
-    );
+      prompt,
+      model,
+      new StringOutputParser(),
+    ]);
 
-    return NextResponse.json({ ok: true }, { status: 200 });
+    const answer = chain.invoke(text);
+
+    //reinitialize the chroma db here
+
+    //set up the rag chain and execute it
+
+    //send the response
+
+    return NextResponse.json({ ok: true, answer }, { status: 200 });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }

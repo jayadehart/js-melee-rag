@@ -12,7 +12,6 @@ import { IntermediateStep } from "./IntermediateStep";
 import { Button } from "./ui/button";
 import { ArrowDown, LoaderCircle, Paperclip } from "lucide-react";
 import { Checkbox } from "./ui/checkbox";
-import { UploadDocumentsForm } from "./UploadDocumentsForm";
 import {
   Dialog,
   DialogContent,
@@ -200,10 +199,7 @@ export function ChatWindow(props: {
       }
     },
     streamMode: "text",
-    onError: (e) =>
-      toast.error(`Error while processing your request`, {
-        description: e.message,
-      }),
+    onError: (e) => console.log(e),
   });
 
   async function sendMessage(e: FormEvent<HTMLFormElement>) {
@@ -330,7 +326,6 @@ export function ChatWindow(props: {
                     Upload a document to use for the chat.
                   </DialogDescription>
                 </DialogHeader>
-                <UploadDocumentsForm />
               </DialogContent>
             </Dialog>
           )}
