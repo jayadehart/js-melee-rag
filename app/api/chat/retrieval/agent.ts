@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { SqlToolkit } from "langchain/agents/toolkits/sql";
 import { openAIModel as model } from "./models";
 import { DataSource } from "typeorm";
@@ -18,6 +20,9 @@ import {
 } from "@langchain/langgraph";
 import { SystemMessage } from "@langchain/core/messages";
 import { ChatOpenAI } from "@langchain/openai";
+import { createClient } from "@supabase/supabase-js";
+import { Client } from "pg";
+import "reflect-metadata";
 
 export const getGraph = async () => {
   const toolkit = await getAgentToolkit(model);
@@ -29,8 +34,7 @@ export const getGraph = async () => {
       "Use to perform a vector search on the stored documents with the provided query",
   });
 
-  const altToolNode = new ToolNode([vectorRetrieverTool]);
-  const toolNode = new ToolNode(toolkit, { handleToolErrors: true });
+  const toolNode = new ToolNode(toolkit);
   const modelWithTools = model.bindTools(toolkit);
   const GraphState = Annotation.Root({
     question: Annotation<string>,
@@ -68,7 +72,7 @@ export const getGraph = async () => {
 
   const workflow = new StateGraph(GraphState)
     .addNode("agent", callAgent)
-    .addNode("tools", altToolNode)
+    .addNode("tools", toolNode)
     .addEdge(START, "agent")
     .addEdge("tools", "agent")
     .addConditionalEdges("agent", shouldContinue);
@@ -78,6 +82,7 @@ export const getGraph = async () => {
 };
 
 export const getAgentToolkit = async (model: BaseChatModel) => {
+  // @ts-ignore
   const datasource = new DataSource({
     type: "postgres",
     url: process.env.SUPABASE_DATABASE_URL_ALT!,

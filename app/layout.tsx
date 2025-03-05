@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { GithubIcon } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
+import "reflect-metadata";
 
 const publicSans = Public_Sans({ subsets: ["latin"] });
 

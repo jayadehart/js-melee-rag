@@ -29,9 +29,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Message as VercelChatMessage, StreamingTextResponse } from "ai";
 
-import { createClient } from "@supabase/supabase-js";
-
-import { SupabaseVectorStore } from "@langchain/community/vectorstores/supabase";
 import {
   AIMessage,
   BaseMessage,
@@ -39,13 +36,11 @@ import {
   HumanMessage,
   SystemMessage,
 } from "@langchain/core/messages";
-import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
-import { createRetrieverTool } from "langchain/tools/retriever";
+import { ChatOpenAI } from "@langchain/openai";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { getAgentToolkit, getAgentToolkitWithoutSQL } from "../retrieval/agent";
 import { AGENT_TEMPLATE } from "../retrieval/templates";
-
-export const runtime = "edge";
+import { getSqlRetriever } from "./retrievers";
 
 const convertVercelMessageToLangChainMessage = (message: VercelChatMessage) => {
   if (message.role === "user") {
@@ -71,24 +66,10 @@ const convertLangChainMessageToVercelMessage = (message: BaseMessage) => {
   }
 };
 
-const AGENT_SYSTEM_TEMPLATE = `You are a stereotypical robot named Robbie and must answer all questions like a stereotypical robot. Use lots of interjections like "BEEP" and "BOOP".
-
-If you don't know how to answer a question, use the available tools to look up relevant information. You should particularly do this for questions about Super Smash Brothers Melee.`;
-
-/**
- * This handler initializes and calls an tool caling ReAct agent.
- * See the docs for more information:
- *
- * https://langchain-ai.github.io/langgraphjs/tutorials/quickstart/
- * https://js.langchain.com/docs/use_cases/question_answering/conversational_retrieval_agents
- */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    /**
-     * We represent intermediate steps as system messages for display purposes,
-     * but don't want them in the chat history.
-     */
+
     const messages = (body.messages ?? [])
       .filter(
         (message: VercelChatMessage) =>

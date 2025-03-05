@@ -81,7 +81,7 @@ const getKeyWordRetriever = async (client: SupabaseClient) => {
   return BM25Retriever.fromDocuments(documents, { k: 3, verbose: true });
 };
 
-const getSqlRetriever = async (model: BaseChatModel) => {
+export const getSqlRetriever = async (model: BaseChatModel) => {
   const datasource = new DataSource({
     type: "postgres",
     url: process.env.SUPABASE_DATABASE_URL!,
