@@ -14,14 +14,5 @@ export const MELEE_RAG_TEMPLATE = `You are a Super Smash Brothers Melee frame da
     CONTEXT:
     {context}`;
 
-export const AGENT_TEMPLATE = `You are a helpful agent with access to a variety of query tools to help answer questions related to Super Smash Brothers Melee.
-
-This is the question you are trying to answer {question}
-
-These are the tools you have access to: {tools}
-
-
-
-
-
+export const AGENT_TEMPLATE = `You are a helpful agent with access to a variety of query tools to help answer questions related to Super Smash Brothers Melee. Use as many tools as you need until you have the requisite context to answer the provided question. Do not return an answer until you have tried every tool. Do not return an answer that does not directly reference a document you have queried.
 `;

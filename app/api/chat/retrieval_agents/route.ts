@@ -14,6 +14,8 @@ import {
 import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
 import { createRetrieverTool } from "langchain/tools/retriever";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
+import { getAgentToolkit, getAgentToolkitWithoutSQL } from "../retrieval/agent";
+import { AGENT_TEMPLATE } from "../retrieval/templates";
 
 export const runtime = "edge";
 
@@ -43,7 +45,7 @@ const convertLangChainMessageToVercelMessage = (message: BaseMessage) => {
 
 const AGENT_SYSTEM_TEMPLATE = `You are a stereotypical robot named Robbie and must answer all questions like a stereotypical robot. Use lots of interjections like "BEEP" and "BOOP".
 
-If you don't know how to answer a question, use the available tools to look up relevant information. You should particularly do this for questions about LangChain.`;
+If you don't know how to answer a question, use the available tools to look up relevant information. You should particularly do this for questions about Super Smash Brothers Melee.`;
 
 /**
  * This handler initializes and calls an tool caling ReAct agent.
@@ -69,58 +71,18 @@ export async function POST(req: NextRequest) {
 
     const chatModel = new ChatOpenAI({
       model: "gpt-4o-mini",
-      temperature: 0.2,
+      temperature: 0.0,
     });
 
-    const client = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_PRIVATE_KEY!,
-    );
-    const vectorstore = new SupabaseVectorStore(new OpenAIEmbeddings(), {
-      client,
-      tableName: "documents",
-      queryName: "match_documents",
-    });
+    const toolKit = await getAgentToolkit(chatModel);
 
-    const retriever = vectorstore.asRetriever();
-
-    /**
-     * Wrap the retriever in a tool to present it to the agent in a
-     * usable form.
-     */
-    const tool = createRetrieverTool(retriever, {
-      name: "search_latest_knowledge",
-      description: "Searches and returns up-to-date general information.",
-    });
-
-    /**
-     * Use a prebuilt LangGraph agent.
-     */
     const agent = await createReactAgent({
       llm: chatModel,
-      tools: [tool],
-      /**
-       * Modify the stock prompt in the prebuilt agent. See docs
-       * for how to customize your agent:
-       *
-       * https://langchain-ai.github.io/langgraphjs/tutorials/quickstart/
-       */
-      messageModifier: new SystemMessage(AGENT_SYSTEM_TEMPLATE),
+      tools: toolKit,
+      messageModifier: new SystemMessage(AGENT_TEMPLATE),
     });
 
     if (!returnIntermediateSteps) {
-      /**
-       * Stream back all generated tokens and steps from their runs.
-       *
-       * We do some filtering of the generated events and only stream back
-       * the final response as a string.
-       *
-       * For this specific type of tool calling ReAct agents with OpenAI, we can tell when
-       * the agent is ready to stream back final output when it no longer calls
-       * a tool and instead streams back content.
-       *
-       * See: https://langchain-ai.github.io/langgraphjs/how-tos/stream-tokens/
-       */
       const eventStream = await agent.streamEvents(
         {
           messages,
@@ -133,7 +95,6 @@ export async function POST(req: NextRequest) {
         async start(controller) {
           for await (const { event, data } of eventStream) {
             if (event === "on_chat_model_stream") {
-              // Intermediate chat model generations will contain tool calls and no content
               if (!!data.chunk.content) {
                 controller.enqueue(textEncoder.encode(data.chunk.content));
               }
@@ -145,11 +106,6 @@ export async function POST(req: NextRequest) {
 
       return new StreamingTextResponse(transformStream);
     } else {
-      /**
-       * We could also pick intermediate steps out from `streamEvents` chunks, but
-       * they are generated as JSON objects, so streaming and displaying them with
-       * the AI SDK is more complicated.
-       */
       const result = await agent.invoke({ messages });
       return NextResponse.json(
         {
@@ -159,6 +115,7 @@ export async function POST(req: NextRequest) {
       );
     }
   } catch (e: any) {
+    console.log(e);
     return NextResponse.json({ error: e.message }, { status: e.status ?? 500 });
   }
 }

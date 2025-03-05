@@ -78,7 +78,7 @@ const getKeyWordRetriever = async (client: SupabaseClient) => {
     pageContent: doc.content,
     metadata: [],
   }));
-  return BM25Retriever.fromDocuments(documents, { k: 3 });
+  return BM25Retriever.fromDocuments(documents, { k: 3, verbose: true });
 };
 
 const getSqlRetriever = async (model: BaseChatModel) => {
