@@ -41,6 +41,7 @@ import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { getAgentToolkit, getAgentToolkitWithoutSQL } from "../retrieval/agent";
 import { AGENT_TEMPLATE } from "../retrieval/templates";
 import { getSqlRetriever } from "./retrievers";
+import { getExampleGraphAgent } from "./graphAgent";
 
 const convertVercelMessageToLangChainMessage = (message: VercelChatMessage) => {
   if (message.role === "user") {
@@ -78,6 +79,11 @@ export async function POST(req: NextRequest) {
       .map(convertVercelMessageToLangChainMessage);
     const returnIntermediateSteps = body.show_intermediate_steps;
 
+    const latestMessage = messages.at(-1);
+
+    console.log("messages", messages);
+
+    console.log("latest", latestMessage);
     const chatModel = new ChatOpenAI({
       model: "gpt-4o-mini",
       temperature: 0.0,
@@ -85,18 +91,20 @@ export async function POST(req: NextRequest) {
 
     const toolKit = await getAgentToolkit(chatModel);
 
-    const agent = await createReactAgent({
+    const altAgent = await createReactAgent({
       llm: chatModel,
       tools: toolKit,
       messageModifier: new SystemMessage(AGENT_TEMPLATE),
     });
 
+    const agent = await getExampleGraphAgent();
+
     if (!returnIntermediateSteps) {
       const eventStream = await agent.streamEvents(
         {
-          messages,
+          messages: [latestMessage],
         },
-        { version: "v2" },
+        { version: "v2", recursionLimit: 15 },
       );
 
       const textEncoder = new TextEncoder();

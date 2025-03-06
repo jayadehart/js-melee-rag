@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { SqlToolkit } from "langchain/agents/toolkits/sql";
 import { openAIModel as model } from "./models";
 import { DataSource } from "typeorm";
@@ -8,7 +6,7 @@ import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { getRetriever, Retriever } from "./retrievers";
 import { createRetrieverTool } from "langchain/tools/retriever";
 import { ToolNode, createReactAgent } from "@langchain/langgraph/prebuilt";
-import { AGENT_TEMPLATE } from "./templates";
+import { AGENT_TEMPLATE, MELEE_RAG_TEMPLATE } from "./templates";
 import { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import {
   Annotation,
