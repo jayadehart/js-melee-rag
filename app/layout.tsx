@@ -43,7 +43,14 @@ export default function RootLayout({
 
             <div className="flex justify-center"></div>
           </div>
-          <div className="bg-customDark mx-4 relative grid rounded-t-2xl border border-customDark border-b-0">
+          <div
+            className="bg-customDark mx-4 relative grid rounded-t-2xl border border-customDark border-b-0"
+            style={{
+              backgroundImage:
+                "linear-gradient(to right, rgba(8,21,38, 0.5) 0 100%), url('/textures/testbg.png')",
+              backgroundSize: "cover",
+            }}
+          >
             <div className="absolute inset-0">{children}</div>
           </div>
         </div>

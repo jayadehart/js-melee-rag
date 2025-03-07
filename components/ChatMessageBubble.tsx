@@ -2,6 +2,8 @@ import { cn } from "@/utils/cn";
 import type { Message } from "ai/react";
 import samus from "../public/images/samus.png";
 import Image from "next/image";
+import hmn from "../public/textures/hmn.png";
+import cpu from "../public/textures/cpu.png";
 
 export function ChatMessageBubble(props: {
   message: Message;
@@ -11,45 +13,41 @@ export function ChatMessageBubble(props: {
   return (
     <div
       className={cn(
-        `rounded-[24px] max-w-[80%] mb-8 flex`,
-        props.message.role === "user"
-          ? "bg-secondary text-secondary-foreground px-4 py-2"
-          : null,
+        `relative rounded-[24px] max-w-[80%] mb-8 flex`,
+
+        "bg-secondary text-secondary-foreground px-4 py-2",
+
         props.message.role === "user" ? "ml-auto" : "mr-auto",
       )}
     >
-      {props.message.role !== "user" && (
-        <div className="mr-4 border bg-secondary -mt-2 rounded-full w-10 h-10 flex-shrink-0 flex items-center justify-center">
-          <Image src={samus} alt="picture of samus" />
+      {/* {props.message.role !== "user" && (
+        <div className="mr-8 -ml-16 border bg-secondary -mt-4 rounded-full w-10 h-10 flex-shrink-0 flex items-center justify-center">
+          <Image src={cpu} alt="picture of samus" />
         </div>
       )}
 
-      <div className="whitespace-pre-wrap flex flex-col">
-        <span>{props.message.content}</span>
+      {props.message.role == "user" && (
+        <div className="mr-8 -ml-16 border bg-secondary -mt-4 rounded-full w-10 h-10 flex-shrink-0 flex items-center justify-center">
+          <Image src={hmn} alt="picture of samus" />
+        </div>
+      )} */}
 
-        {props.sources && props.sources.length ? (
-          <>
-            <code className="mt-4 mr-auto bg-primary px-2 py-1 rounded">
-              <h2>🔍 Sources:</h2>
-            </code>
-            <code className="mt-1 mr-2 bg-primary px-2 py-1 rounded text-xs">
-              {props.sources?.map((source, i) => (
-                <div className="mt-2" key={"source:" + i}>
-                  {i + 1}. &quot;{source.pageContent}&quot;
-                  {source.metadata?.loc?.lines !== undefined ? (
-                    <div>
-                      <br />
-                      Lines {source.metadata?.loc?.lines?.from} to{" "}
-                      {source.metadata?.loc?.lines?.to}
-                    </div>
-                  ) : (
-                    ""
-                  )}
-                </div>
-              ))}
-            </code>
-          </>
-        ) : null}
+      {/* {props.message.role !== "user" && (
+        <div className="absolute left-[-4px] top-2 w-0 h-0 border-t-[10px] border-t-transparent border-r-[10px] border-r-secondary border-b-[10px] border-b-transparent" />
+      )} */}
+
+      <div className="whitespace-pre-wrap flex">
+        {props.message.role !== "user" && (
+          <div className="-ml-16  -mt-4 rounded-full w-16 h-11 flex-shrink-0 flex items-center justify-center">
+            <Image src={cpu} alt="picture of samus" height={60} width={60} />
+          </div>
+        )}
+        <span>{props.message.content}</span>
+        {props.message.role == "user" && (
+          <div className="-mr-16 -mt-4 rounded-full w-16 h-11 flex-shrink-0 flex items-center justify-center">
+            <Image src={hmn} alt="picture of samus" height={60} width={60} />
+          </div>
+        )}
       </div>
     </div>
   );
