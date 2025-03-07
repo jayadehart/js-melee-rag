@@ -80,3 +80,41 @@
     scrollbar-width: none;
   }
 }
+
+.logo {
+  font-size: 72px;
+  background: -webkit-linear-gradient(#010101, #bf2115);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: white;
+  -webkit-text-stroke: 1px white;
+}
+
+.outline-container {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 5rem;
+}
+.element {
+  position: absolute;
+  font-size: 6rem;
+  text-align: center;
+  width: 100%;
+  font-family: "Open Sans", sans-serif;
+  font-weight: 900;
+  background: -webkit-linear-gradient(#010101, #bf2115);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.element:nth-child(1) {
+  z-index: 2;
+  -webkit-text-stroke: 0.005rem white;
+}
+.element:nth-child(2) {
+  z-index: 1;
+  -webkit-text-stroke: 0.2rem black;
+}

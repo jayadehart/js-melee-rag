@@ -91,13 +91,13 @@ export async function POST(req: NextRequest) {
 
     const toolKit = await getAgentToolkit(chatModel);
 
-    const altAgent = await createReactAgent({
+    const agent = await createReactAgent({
       llm: chatModel,
       tools: toolKit,
       messageModifier: new SystemMessage(AGENT_TEMPLATE),
     });
 
-    const agent = await getExampleGraphAgent();
+    const altAgent = await getExampleGraphAgent();
 
     if (!returnIntermediateSteps) {
       const eventStream = await agent.streamEvents(

@@ -26,11 +26,11 @@ function ChatMessages(props: {
   messages: Message[];
   emptyStateComponent: ReactNode;
   sourcesForMessages: Record<string, any>;
-  aiEmoji?: string;
+  aiEmoji?: any;
   className?: string;
 }) {
   return (
-    <div className="flex flex-col max-w-[768px] mx-auto pb-12 w-full">
+    <div className="flex flex-col max-w-[768px] mx-auto pb-12 w-full character-portrait">
       {props.messages.map((m, i) => {
         if (m.role === "system") {
           return <IntermediateStep key={m.id} message={m} />;
@@ -168,7 +168,7 @@ export function ChatWindow(props: {
   endpoint: string;
   emptyStateComponent: ReactNode;
   placeholder?: string;
-  emoji?: string;
+  emoji?: any;
   showIngestForm?: boolean;
   showIntermediateStepsToggle?: boolean;
 }) {
