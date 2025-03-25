@@ -1,8 +1,18 @@
 import { openAIModel as model } from "./models";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { ToolNode, createReactAgent } from "@langchain/langgraph/prebuilt";
-import { AGENT_TEMPLATE, MELEE_RAG_TEMPLATE } from "./templates";
-import { Annotation, START, END, StateGraph } from "@langchain/langgraph";
+import {
+  AGENT_TEMPLATE,
+  MELEE_RAG_TEMPLATE,
+  RELEVENCE_EXTRACTOR_TEMPLATE,
+} from "./templates";
+import {
+  Annotation,
+  START,
+  END,
+  StateGraph,
+  Graph,
+} from "@langchain/langgraph";
 import { SystemMessage } from "@langchain/core/messages";
 import { ChatOpenAI } from "@langchain/openai";
 import { createClient } from "@supabase/supabase-js";
@@ -12,6 +22,7 @@ import { BaseMessage } from "@langchain/core/messages";
 import { getAgentToolkit } from "./agent";
 import { z } from "zod";
 import { AIMessage } from "@langchain/langgraph-sdk";
+import { tool } from "@langchain/core/tools";
 
 export const getExampleGraphAgent = async () => {
   const GraphState = Annotation.Root({
@@ -19,6 +30,7 @@ export const getExampleGraphAgent = async () => {
       reducer: (x, y) => x.concat(y),
       default: () => [],
     }),
+    documents: Annotation<String>,
   });
 
   const toolkit = await getAgentToolkit(model);
@@ -39,7 +51,7 @@ export const getExampleGraphAgent = async () => {
     }
     // If there are no tool calls then we finish.
     console.log("---DECISION: END---");
-    return END;
+    return "generate";
   };
 
   const gradeDocumentsRelevence = async (
@@ -257,3 +269,119 @@ export const getExampleGraphAgent = async () => {
   const app = workflow.compile();
   return app;
 };
+
+export const getGraphAgent = async () => {
+  const GraphState = Annotation.Root({
+    messages: Annotation<BaseMessage[]>({
+      reducer: (x, y) => x.concat(y),
+      default: () => [],
+    }),
+    context: Annotation<string>(), // Ensure context is always a string
+  });
+
+  const model = new ChatOpenAI({
+    model: "gpt-4o",
+    temperature: 0,
+    streaming: true,
+  });
+
+  const toolkit = await getAgentToolkit(model);
+  const toolNode = new ToolNode<typeof GraphState.State>(toolkit);
+
+  const agent = async (state: typeof GraphState.State) => {
+    console.log("---AGENT---");
+    const { context, messages } = state;
+
+    if (messages.length === 0) {
+      throw new Error("No messages found in state");
+    }
+
+    const model = new ChatOpenAI({
+      model: "gpt-4o",
+      temperature: 0,
+      streaming: true,
+    }).bindTools(toolkit);
+
+    const question = messages[0].content as string;
+
+    const prompt: ChatPromptTemplate =
+      ChatPromptTemplate.fromTemplate(MELEE_RAG_TEMPLATE);
+
+    const chain = prompt.pipe(model);
+    const response = await chain.invoke({
+      question,
+      context,
+    });
+
+    return {
+      messages: [response],
+    };
+  };
+
+  const shouldRetrieve = (state: typeof GraphState.State): string => {
+    const { messages } = state;
+    console.log("---DECIDE TO RETRIEVE---");
+
+    if (messages.length === 0) return END; // Prevent accessing undefined
+
+    const lastMessage = messages[messages.length - 1];
+
+    if (
+      "tool_calls" in lastMessage &&
+      Array.isArray(lastMessage.tool_calls) &&
+      lastMessage.tool_calls.length
+    ) {
+      console.log("---DECISION: RETRIEVE---");
+      return "retrieve";
+    }
+    console.log("---DECISION: END---");
+    return END;
+  };
+
+  const extractRelevant = async (state: typeof GraphState.State) => {
+    console.log("---EXTRACT---");
+
+    const { context, messages } = state;
+
+    if (messages.length === 0) {
+      throw new Error("No messages found in state");
+    }
+
+    const question = messages[0].content as string;
+    const toolCallMessage = messages[messages.length - 1];
+
+    const prompt: ChatPromptTemplate = ChatPromptTemplate.fromTemplate(
+      RELEVENCE_EXTRACTOR_TEMPLATE,
+    );
+
+    const chain = prompt.pipe(model);
+    const response = await chain.invoke({
+      question,
+      context: toolCallMessage.content,
+    });
+
+    return {
+      context: response.content,
+    };
+  };
+
+  const workflow = new StateGraph(GraphState)
+    .addNode("agent", agent)
+    .addNode("retrieve", toolNode)
+    .addNode("extractRelevant", extractRelevant)
+    .addEdge(START, "agent")
+    .addConditionalEdges("agent", shouldRetrieve)
+    .addEdge("retrieve", "extractRelevant")
+    .addEdge("extractRelevant", "agent");
+
+  const app = workflow.compile();
+  return app;
+};
+
+//node 1: Agent
+//looks at the context in state and decides to either return an answer or call tools
+
+//node 2: Tool Node
+//generated tool node
+
+//node 3: Filter relevent information from the tool calls and add it to state

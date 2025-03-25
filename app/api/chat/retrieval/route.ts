@@ -1,31 +1,3 @@
-// import { NextRequest, NextResponse } from "next/server";
-// import { getAgent, getGraph } from "./agent";
-
-// export async function POST(req: NextRequest) {
-//   const body = await req.json();
-//   console.log(body);
-//   const chat = body.messages;
-//   const latest = chat[chat.length - 1].content;
-
-//   try {
-//     // const graph = await getGraph();
-//     // const result = await graph.invoke({
-//     //   question: latest,
-//     //   context: [],
-//     //   answer: false,
-//     // });
-
-//     const agent = await getAgent();
-
-//     const result = await agent.invoke(latest);
-
-//     return NextResponse.json({ ok: true, answer: result }, { status: 200 });
-//   } catch (e: any) {
-//     console.log(e);
-//     return NextResponse.json({ error: e.message }, { status: 500 });
-//   }
-// }
-
 import { NextRequest, NextResponse } from "next/server";
 import { Message as VercelChatMessage, StreamingTextResponse } from "ai";
 
@@ -41,7 +13,7 @@ import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { getAgentToolkit, getAgentToolkitWithoutSQL } from "../retrieval/agent";
 import { AGENT_TEMPLATE } from "../retrieval/templates";
 import { getSqlRetriever } from "./retrievers";
-import { getExampleGraphAgent } from "./graphAgent";
+import { getExampleGraphAgent, getGraphAgent } from "./graphAgent";
 
 const convertVercelMessageToLangChainMessage = (message: VercelChatMessage) => {
   if (message.role === "user") {
@@ -77,7 +49,14 @@ export async function POST(req: NextRequest) {
           message.role === "user" || message.role === "assistant",
       )
       .map(convertVercelMessageToLangChainMessage);
-    const returnIntermediateSteps = body.show_intermediate_steps;
+    const returnIntermediateSteps = false;
+
+    console.log(body);
+    const useCustom = body.useCustom;
+    const showSteps = body.show_intermediate_steps;
+
+    console.log("usecustom", useCustom);
+    console.log("steps", showSteps);
 
     const latestMessage = messages.at(-1);
 
@@ -91,16 +70,18 @@ export async function POST(req: NextRequest) {
 
     const toolKit = await getAgentToolkit(chatModel);
 
-    const agent = await createReactAgent({
+    const reactAgent = await createReactAgent({
       llm: chatModel,
       tools: toolKit,
       messageModifier: new SystemMessage(AGENT_TEMPLATE),
     });
 
-    const altAgent = await getExampleGraphAgent();
+    const graphAgent = await getGraphAgent();
+
+    const agentToUse = useCustom ? graphAgent : reactAgent;
 
     if (!returnIntermediateSteps) {
-      const eventStream = await agent.streamEvents(
+      const eventStream = await agentToUse.streamEvents(
         {
           messages: [latestMessage],
         },
@@ -123,7 +104,7 @@ export async function POST(req: NextRequest) {
 
       return new StreamingTextResponse(transformStream);
     } else {
-      const result = await agent.invoke({ messages });
+      const result = await agentToUse.invoke({ messages });
       return NextResponse.json(
         {
           messages: result.messages.map(convertLangChainMessageToVercelMessage),

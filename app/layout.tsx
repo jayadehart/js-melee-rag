@@ -44,7 +44,7 @@ export default function RootLayout({
             <div className="flex justify-center"></div>
           </div>
           <div
-            className="bg-customDark mx-4 relative grid rounded-t-2xl border border-customDark border-b-0"
+            className="bg-customDark mx-4 xl:ml-auto xl:mr-auto xl:w-2/3 2xl:w-1/2  relative grid rounded-t-2xl border border-customDark border-b-0"
             style={{
               backgroundImage:
                 "linear-gradient(to right, rgba(8,21,38, 0.5) 0 100%), url('/textures/testbg.png')",

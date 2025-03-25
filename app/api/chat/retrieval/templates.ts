@@ -21,3 +21,23 @@ export const MELEE_RAG_TEMPLATE = `You are a Super Smash Brothers Melee frame da
 
 export const AGENT_TEMPLATE = `You are a helpful agent with access to a variety of query tools to help answer questions related to Super Smash Brothers Melee. Use as many tools as you need until you have the requisite context to answer the provided question. Do not return an answer until you have tried every tool. Do not return an answer that does not directly reference a document you have queried.
 `;
+
+export const RAG_AGENT_TEMPLATE = `You are a helpful agent with access to a variety of query tools to help answer questions related to Super Smash Brothers Melee. Your job is to look at the provided context and determine if it answers the provided question. If so, generate a response using the context. If not, use any of the tools at your disposal to gain more context.
+
+    QUESTION:
+    {question}
+
+    CONTEXT:
+    {context}
+
+`;
+
+export const RELEVENCE_EXTRACTOR_TEMPLATE = `You are a helpful relevence extractor agent. Given a question and some tool call output, you will only the relevant data from the tool call and return it in a brief message. If none of the data in the tool call is relevant, you may return 'NONE'
+
+    QUESTION:
+    {question}
+
+    CONTEXT:
+    {context}
+
+`;
