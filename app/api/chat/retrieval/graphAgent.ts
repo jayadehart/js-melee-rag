@@ -4,6 +4,7 @@ import { ToolNode, createReactAgent } from "@langchain/langgraph/prebuilt";
 import {
   AGENT_TEMPLATE,
   MELEE_RAG_TEMPLATE,
+  RAG_AGENT_TEMPLATE,
   RELEVENCE_EXTRACTOR_TEMPLATE,
 } from "./templates";
 import {
@@ -276,7 +277,9 @@ export const getGraphAgent = async () => {
       reducer: (x, y) => x.concat(y),
       default: () => [],
     }),
-    context: Annotation<string>(), // Ensure context is always a string
+    context: Annotation<string>({
+      reducer: (x, y) => x.concat(y),
+    }),
   });
 
   const model = new ChatOpenAI({
@@ -287,27 +290,25 @@ export const getGraphAgent = async () => {
 
   const toolkit = await getAgentToolkit(model);
   const toolNode = new ToolNode<typeof GraphState.State>(toolkit);
+  const modelWithTools = model.bindTools(toolkit);
 
   const agent = async (state: typeof GraphState.State) => {
     console.log("---AGENT---");
+    console.log(state);
     const { context, messages } = state;
 
     if (messages.length === 0) {
       throw new Error("No messages found in state");
     }
 
-    const model = new ChatOpenAI({
-      model: "gpt-4o",
-      temperature: 0,
-      streaming: true,
-    }).bindTools(toolkit);
-
     const question = messages[0].content as string;
 
     const prompt: ChatPromptTemplate =
-      ChatPromptTemplate.fromTemplate(MELEE_RAG_TEMPLATE);
+      ChatPromptTemplate.fromTemplate(RAG_AGENT_TEMPLATE);
 
-    const chain = prompt.pipe(model);
+    console.log(prompt);
+
+    const chain = prompt.pipe(modelWithTools);
     const response = await chain.invoke({
       question,
       context,
@@ -321,6 +322,7 @@ export const getGraphAgent = async () => {
   const shouldRetrieve = (state: typeof GraphState.State): string => {
     const { messages } = state;
     console.log("---DECIDE TO RETRIEVE---");
+    console.log(state);
 
     if (messages.length === 0) return END; // Prevent accessing undefined
 
@@ -340,6 +342,7 @@ export const getGraphAgent = async () => {
 
   const extractRelevant = async (state: typeof GraphState.State) => {
     console.log("---EXTRACT---");
+    console.log(state);
 
     const { context, messages } = state;
 
@@ -377,11 +380,3 @@ export const getGraphAgent = async () => {
   const app = workflow.compile();
   return app;
 };
-
-//node 1: Agent
-//looks at the context in state and decides to either return an answer or call tools
-
-//node 2: Tool Node
-//generated tool node
-
-//node 3: Filter relevent information from the tool calls and add it to state
