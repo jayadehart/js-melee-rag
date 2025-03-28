@@ -4,9 +4,10 @@ import samus from "../public/images/samus.png";
 import Image from "next/image";
 import hmn from "../public/textures/hmn.png";
 import cpu from "../public/textures/cpu.png";
+import { UIMessage } from "ai";
 
 export function ChatMessageBubble(props: {
-  message: Message;
+  message: UIMessage;
   aiEmoji?: any;
   sources: any[];
 }) {

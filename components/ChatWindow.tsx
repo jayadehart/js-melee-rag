@@ -1,32 +1,23 @@
 "use client";
 
-import { type Message } from "ai";
-import { useChat } from "ai/react";
+import { useChat } from "@ai-sdk/react";
+import { type UIMessage, type Message } from "ai";
 import { useEffect, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
-import { toast } from "sonner";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 
 import { ChatMessageBubble } from "@/components/ChatMessageBubble";
 import { IntermediateStep } from "./IntermediateStep";
 import { Button } from "./ui/button";
 import { ArrowDown, LoaderCircle, Paperclip } from "lucide-react";
-import { Checkbox } from "./ui/checkbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "./ui/dialog";
+
 import { cn } from "@/utils/cn";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "./ui/switch";
 import { StreamEvent } from "@langchain/core/tracers/log_stream";
 
 function ChatMessages(props: {
-  messages: Message[];
+  messages: UIMessage[];
   emptyStateComponent: ReactNode;
   sourcesForMessages: Record<string, any>;
   aiEmoji?: any;
@@ -214,6 +205,9 @@ export function ChatWindow(props: {
       }
     },
     streamProtocol: "data",
+    onFinish: () => {
+      chat.setData([]);
+    },
 
     onError: (e) => console.log(e),
   });
@@ -221,6 +215,8 @@ export function ChatWindow(props: {
   useEffect(() => {
     console.log(chat.data);
   }, [chat.data]);
+
+  console.log(chat.data);
 
   async function sendMessage(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();

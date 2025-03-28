@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   Message as VercelChatMessage,
-  StreamingTextResponse,
   LangChainAdapter,
+  createDataStream,
 } from "ai";
 
 import {
@@ -20,6 +20,13 @@ import { getGraphAgent } from "./graphAgent";
 import { createStreamableValue } from "ai/rsc";
 import { FakeListChatModel } from "@langchain/core/utils/testing";
 import { StringOutputParser } from "@langchain/core/output_parsers";
+import { openai } from "@ai-sdk/openai";
+import { generateId, createDataStreamResponse, streamText } from "ai";
+import {
+  prepareResponseHeaders,
+  toDataStreamResponse,
+} from "@/utils/customTransformer";
+import { StreamData } from "ai";
 
 const convertVercelMessageToLangChainMessage = (message: VercelChatMessage) => {
   if (message.role === "user") {
@@ -80,26 +87,41 @@ export async function POST(req: NextRequest) {
       { version: "v2", recursionLimit: 10 },
     );
 
+    const data = new StreamData();
+
     const transformedStream = new TransformStream({
       async transform(chunk, controller) {
-        // Log the chunk on the server for debugging
-        console.log("Stream chunk:", chunk);
+        console.log("Stream chunk:", chunk); // Debug logging
 
-        // Pass the chunk through to the client
+        if (typeof chunk !== "string" && "event" in chunk) {
+          if (chunk.event !== "on_chat_model_stream") {
+            data.append({
+              type: "langchain_event",
+              value: {
+                event: chunk.event,
+                name: chunk.name,
+                data: chunk.data,
+              },
+            });
+          }
+        }
+
         controller.enqueue(chunk);
+      },
+      flush() {
+        data.close();
       },
     });
 
     const finalStream = stream.pipeThrough(transformedStream);
 
-    // const langChainStream = LangChainAdapter.toDataStream(finalStream);
-    // langChainStream.pipeThrough(transformedStream);
-
-    return LangChainAdapter.toDataStreamResponse(finalStream);
+    return LangChainAdapter.toDataStreamResponse(finalStream, { data });
   } catch (e) {
     console.log(e);
     return NextResponse.json({ hi: "hi" });
   }
 }
 
-//ok so according to all the docs I've read I am doing everything right. I am sending my response as a 'datastream'
+//ok so according to all the docs I've read I am doing everything right. I am sending my response as a 'datastream', and using the 'data' stream protocol with use chat. The data from the datastreamresponse should be showing up in chat.data, but it isn't.
+
+//what I can try doing is writing my own stream parser for the datastreamresponse on the frontend and determining what to do with everything there
