@@ -324,7 +324,7 @@ export const getGraphAgent = async () => {
     console.log("---DECIDE TO RETRIEVE---");
     console.log(state);
 
-    if (messages.length === 0) return END; // Prevent accessing undefined
+    if (messages.length === 0) return END;
 
     const lastMessage = messages[messages.length - 1];
 

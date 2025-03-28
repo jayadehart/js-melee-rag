@@ -2,7 +2,7 @@
 
 import { type Message } from "ai";
 import { useChat } from "ai/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { toast } from "sonner";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
@@ -23,6 +23,7 @@ import {
 import { cn } from "@/utils/cn";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "./ui/switch";
+import { StreamEvent } from "@langchain/core/tracers/log_stream";
 
 function ChatMessages(props: {
   messages: Message[];
@@ -176,6 +177,7 @@ export function ChatWindow(props: {
 }) {
   const [tabValue, setTabValue] = useState("react");
   const [showSteps, setShowSteps] = useState(false);
+  const [data, setData] = useState<StreamEvent[]>([]);
 
   const handleTabChange = (value: string) => {
     setTabValue(value);
@@ -211,95 +213,26 @@ export function ChatWindow(props: {
         });
       }
     },
-    streamMode: "text",
+    streamProtocol: "data",
+
     onError: (e) => console.log(e),
   });
+
+  useEffect(() => {
+    console.log(chat.data);
+  }, [chat.data]);
 
   async function sendMessage(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (chat.isLoading || intermediateStepsLoading) return;
 
-    // if (!showIntermediateSteps) {
-    //   console.log("here");
-    //   console.log(e);
-    //   chat.handleSubmit(e);
-    //   return;
-    // }
-
-    // Some extra work to show intermediate steps properly
-    setIntermediateStepsLoading(true);
-
-    chat.setInput("");
-    const messagesWithUserReply = chat.messages.concat({
-      id: chat.messages.length.toString(),
-      content: chat.input,
-      role: "user",
-    });
-    chat.setMessages(messagesWithUserReply);
-
-    const response = await fetch(props.endpoint, {
-      method: "POST",
-      body: JSON.stringify({
-        messages: messagesWithUserReply,
-        show_intermediate_steps: showSteps,
+    chat.handleSubmit(e, {
+      data: {
         useCustom: tabValue === "custom",
-      }),
+        showSteps,
+      },
     });
-    const json = await response.json();
-    setIntermediateStepsLoading(false);
-
-    if (!response.ok) {
-      toast.error(`Error while processing your request`, {
-        description: json.error,
-      });
-      return;
-    }
-
-    const responseMessages: Message[] = json.messages;
-
-    // Represent intermediate steps as system messages for display purposes
-    // TODO: Add proper support for tool messages
-    // const toolCallMessages = responseMessages.filter(
-    //   (responseMessage: Message) => {
-    //     return (
-    //       (responseMessage.role === "assistant" &&
-    //         !!responseMessage.tool_calls?.length) ||
-    //       responseMessage.role === "tool"
-    //     );
-    //   },
-    // );
-
-    // const intermediateStepMessages = [];
-    // for (let i = 0; i < toolCallMessages.length; i += 2) {
-    //   const aiMessage = toolCallMessages[i];
-    //   const toolMessage = toolCallMessages[i + 1];
-    //   intermediateStepMessages.push({
-    //     id: (messagesWithUserReply.length + i / 2).toString(),
-    //     role: "system" as const,
-    //     content: JSON.stringify({
-    //       action: aiMessage.tool_calls?.[0],
-    //       observation: toolMessage.content,
-    //     }),
-    //   });
-    // }
-    // const newMessages = messagesWithUserReply;
-    // for (const message of intermediateStepMessages) {
-    //   newMessages.push(message);
-    //   chat.setMessages([...newMessages]);
-    //   await new Promise((resolve) =>
-    //     setTimeout(resolve, 1000 + Math.random() * 1000),
-    //   );
-    // }
-
-    // chat.setMessages([
-    //   ...newMessages,
-    //   {
-    //     id: newMessages.length.toString(),
-    //     content: responseMessages[responseMessages.length - 1].content,
-    //     role: "assistant",
-    //   },
-    // ]);
-    chat.setMessages([...responseMessages]);
+    return;
   }
 
   return (

@@ -20,22 +20,6 @@ export function ChatMessageBubble(props: {
         props.message.role === "user" ? "ml-auto" : "mr-auto",
       )}
     >
-      {/* {props.message.role !== "user" && (
-        <div className="mr-8 -ml-16 border bg-secondary -mt-4 rounded-full w-10 h-10 flex-shrink-0 flex items-center justify-center">
-          <Image src={cpu} alt="picture of samus" />
-        </div>
-      )}
-
-      {props.message.role == "user" && (
-        <div className="mr-8 -ml-16 border bg-secondary -mt-4 rounded-full w-10 h-10 flex-shrink-0 flex items-center justify-center">
-          <Image src={hmn} alt="picture of samus" />
-        </div>
-      )} */}
-
-      {/* {props.message.role !== "user" && (
-        <div className="absolute left-[-4px] top-2 w-0 h-0 border-t-[10px] border-t-transparent border-r-[10px] border-r-secondary border-b-[10px] border-b-transparent" />
-      )} */}
-
       <div className="whitespace-pre-wrap flex">
         {props.message.role !== "user" && (
           <div className="-ml-16  -mt-4 rounded-full w-16 h-11 flex-shrink-0 flex items-center justify-center">
@@ -51,4 +35,4 @@ export function ChatMessageBubble(props: {
       </div>
     </div>
   );
-}   
+}

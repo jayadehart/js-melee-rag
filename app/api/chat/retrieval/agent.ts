@@ -136,7 +136,7 @@ export const getAgentToolkitWithoutSQL = async (model: BaseChatModel) => {
 export const getAgent = async () => {
   const openAIModel = new ChatOpenAI({
     model: "gpt-4o-mini",
-    apiKey: process.env.OPENAI_API_KEY,
+    apiKey: process.env.OPENAI_API_KEY2,
     temperature: 0,
   });
 

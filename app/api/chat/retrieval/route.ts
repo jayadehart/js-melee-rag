@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Message as VercelChatMessage, StreamingTextResponse } from "ai";
+import {
+  Message as VercelChatMessage,
+  StreamingTextResponse,
+  LangChainAdapter,
+} from "ai";
 
 import {
   AIMessage,
@@ -10,10 +14,12 @@ import {
 } from "@langchain/core/messages";
 import { ChatOpenAI } from "@langchain/openai";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
-import { getAgentToolkit, getAgentToolkitWithoutSQL } from "../retrieval/agent";
+import { getAgentToolkit } from "../retrieval/agent";
 import { AGENT_TEMPLATE } from "../retrieval/templates";
-import { getSqlRetriever } from "./retrievers";
-import { getExampleGraphAgent, getGraphAgent } from "./graphAgent";
+import { getGraphAgent } from "./graphAgent";
+import { createStreamableValue } from "ai/rsc";
+import { FakeListChatModel } from "@langchain/core/utils/testing";
+import { StringOutputParser } from "@langchain/core/output_parsers";
 
 const convertVercelMessageToLangChainMessage = (message: VercelChatMessage) => {
   if (message.role === "user") {
@@ -22,20 +28,6 @@ const convertVercelMessageToLangChainMessage = (message: VercelChatMessage) => {
     return new AIMessage(message.content);
   } else {
     return new ChatMessage(message.content, message.role);
-  }
-};
-
-const convertLangChainMessageToVercelMessage = (message: BaseMessage) => {
-  if (message._getType() === "human") {
-    return { content: message.content, role: "user" };
-  } else if (message._getType() === "ai") {
-    return {
-      content: message.content,
-      role: "assistant",
-      tool_calls: (message as AIMessage).tool_calls,
-    };
-  } else {
-    return { content: message.content, role: message._getType() };
   }
 };
 
@@ -49,20 +41,23 @@ export async function POST(req: NextRequest) {
           message.role === "user" || message.role === "assistant",
       )
       .map(convertVercelMessageToLangChainMessage);
-    const returnIntermediateSteps = false;
+    const useCustom = body.data.useCustom;
+    const showSteps = body.data.showSteps;
 
-    console.log(body);
-    const useCustom = body.useCustom;
-    const showSteps = body.show_intermediate_steps;
+    console.log(useCustom, showSteps);
 
-    console.log("usecustom", useCustom);
-    console.log("steps", showSteps);
+    const chat = new FakeListChatModel({
+      responses: [
+        "very long output with lots and lots of text to see how streaming looks when there is a very long verbose response that takes a long timne to output and has a lot of words sometimes even more words than that it could have a whole lot of text and stuff as an output like this",
+      ],
+    });
+
+    const testStream = await chat
+      .pipe(new StringOutputParser())
+      .stream(`You want to hear a JavasSript joke?`);
 
     const latestMessage = messages.at(-1);
 
-    console.log("messages", messages);
-
-    console.log("latest", latestMessage);
     const chatModel = new ChatOpenAI({
       model: "gpt-4o-mini",
       temperature: 0.0,
@@ -70,7 +65,7 @@ export async function POST(req: NextRequest) {
 
     const toolKit = await getAgentToolkit(chatModel);
 
-    const reactAgent = await createReactAgent({
+    const reactAgent = createReactAgent({
       llm: chatModel,
       tools: toolKit,
       messageModifier: new SystemMessage(AGENT_TEMPLATE),
@@ -80,40 +75,31 @@ export async function POST(req: NextRequest) {
 
     const agentToUse = useCustom ? graphAgent : reactAgent;
 
-    if (!returnIntermediateSteps) {
-      const eventStream = await agentToUse.streamEvents(
-        {
-          messages: [latestMessage],
-        },
-        { version: "v2", recursionLimit: 15 },
-      );
+    const stream = agentToUse.streamEvents(
+      { messages: [latestMessage] },
+      { version: "v2", recursionLimit: 10 },
+    );
 
-      const textEncoder = new TextEncoder();
-      const transformStream = new ReadableStream({
-        async start(controller) {
-          for await (const { event, data } of eventStream) {
-            if (event === "on_chat_model_stream") {
-              if (!!data.chunk.content) {
-                controller.enqueue(textEncoder.encode(data.chunk.content));
-              }
-            }
-          }
-          controller.close();
-        },
-      });
+    const transformedStream = new TransformStream({
+      async transform(chunk, controller) {
+        // Log the chunk on the server for debugging
+        console.log("Stream chunk:", chunk);
 
-      return new StreamingTextResponse(transformStream);
-    } else {
-      const result = await agentToUse.invoke({ messages });
-      return NextResponse.json(
-        {
-          messages: result.messages.map(convertLangChainMessageToVercelMessage),
-        },
-        { status: 200 },
-      );
-    }
-  } catch (e: any) {
+        // Pass the chunk through to the client
+        controller.enqueue(chunk);
+      },
+    });
+
+    const finalStream = stream.pipeThrough(transformedStream);
+
+    // const langChainStream = LangChainAdapter.toDataStream(finalStream);
+    // langChainStream.pipeThrough(transformedStream);
+
+    return LangChainAdapter.toDataStreamResponse(finalStream);
+  } catch (e) {
     console.log(e);
-    return NextResponse.json({ error: e.message }, { status: e.status ?? 500 });
+    return NextResponse.json({ hi: "hi" });
   }
 }
+
+//ok so according to all the docs I've read I am doing everything right. I am sending my response as a 'datastream'

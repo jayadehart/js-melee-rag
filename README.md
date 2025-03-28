@@ -1,6 +1,8 @@
-### SUPER RAG BROS
+# SUPER RAG BROS
 
 A Super Smash Brothers themed chatbot. Uses multi modal Retrieval Augmented Generation (RAG) to answer user questions about frame data
+
+Check out the [site](https://js-melee-rag.vercel.app/)
 
 ## Tech
 
