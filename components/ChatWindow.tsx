@@ -295,7 +295,7 @@ export function ChatWindow(props: {
                 checked={showSteps}
                 onCheckedChange={handleCheckedChange}
               />
-              <div className="text-sm">Show intermediate steps</div>
+              <div className="text-sm">Show agent status</div>
             </div>
           </div>
         </ChatInput>
