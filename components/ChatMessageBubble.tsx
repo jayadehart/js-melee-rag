@@ -4,13 +4,24 @@ import samus from "../public/images/samus.png";
 import Image from "next/image";
 import hmn from "../public/textures/hmn.png";
 import cpu from "../public/textures/cpu.png";
-import { UIMessage } from "ai";
+import { JSONValue, UIMessage } from "ai";
+import { useMemo } from "react";
+import { eventMessageMap } from "@/utils/eventMap";
 
 export function ChatMessageBubble(props: {
   message: UIMessage;
   aiEmoji?: any;
   sources: any[];
+  data?: JSONValue[] | undefined;
+  showSteps: boolean;
 }) {
+  const latestEvent = useMemo(() => {
+    if (props.data) {
+      const obj = props.data[props.data.length - 1] as any;
+      return obj.value.name;
+    }
+  }, [props.data]);
+
   return (
     <div
       className={cn(
@@ -24,13 +35,21 @@ export function ChatMessageBubble(props: {
       <div className="whitespace-pre-wrap flex">
         {props.message.role !== "user" && (
           <div className="-ml-16  -mt-4 rounded-full w-16 h-11 flex-shrink-0 flex items-center justify-center">
-            <Image src={cpu} alt="picture of samus" height={60} width={60} />
+            <Image src={cpu} alt="melee cpu image" height={60} width={60} />
           </div>
         )}
+        {props.data &&
+          props.message.role === "assistant" &&
+          !props.message.content &&
+          props.showSteps && (
+            <div className="animate-pulse">
+              {eventMessageMap.get(latestEvent) || "Thinking"}
+            </div>
+          )}
         <span>{props.message.content}</span>
         {props.message.role == "user" && (
           <div className="-mr-16 -mt-4 rounded-full w-16 h-11 flex-shrink-0 flex items-center justify-center">
-            <Image src={hmn} alt="picture of samus" height={60} width={60} />
+            <Image src={hmn} alt="melee human image" height={60} width={60} />
           </div>
         )}
       </div>

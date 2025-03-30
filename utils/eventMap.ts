@@ -1,0 +1,16 @@
+export const eventMessageMap = new Map([
+  ["LangGraph", "Processing the request workflow"],
+  ["__start__", "Starting the execution graph"],
+  ["ChannelWrite<...>", "Passing data between components"],
+  ["agent", "Agent processing the request"],
+  ["RunnableSequence", "Executing sequence of operations"],
+  ["prompt", "Preparing the AI prompt"],
+  ["ChatOpenAI", "Calling the AI model"],
+  ["Branch<agent,continue,__end__>", "Determining next steps"],
+  ["tools", "Using tools to gather information"],
+  ["vectorSearch", "Searching vector database"],
+  ["VectorStoreRetriever", "Retrieving data from storage"],
+  ["ChannelWrite<__start__:agent>", "Initializing agent process"],
+  ["ChannelWrite<...,agent>", "Passing data to agent"],
+  ["ChannelWrite<...,tools>", "Passing data to tools"],
+]);

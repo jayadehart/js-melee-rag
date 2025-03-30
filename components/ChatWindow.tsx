@@ -15,6 +15,7 @@ import { cn } from "@/utils/cn";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "./ui/switch";
 import { StreamEvent } from "@langchain/core/tracers/log_stream";
+import type { JSONValue } from "ai";
 
 function ChatMessages(props: {
   messages: UIMessage[];
@@ -22,6 +23,8 @@ function ChatMessages(props: {
   sourcesForMessages: Record<string, any>;
   aiEmoji?: any;
   className?: string;
+  data: JSONValue[] | undefined;
+  showsteps: boolean;
 }) {
   return (
     <div className="flex flex-col max-w-[768px] mx-auto pb-12 w-full character-portrait">
@@ -37,6 +40,8 @@ function ChatMessages(props: {
             message={m}
             aiEmoji={props.aiEmoji}
             sources={props.sourcesForMessages[sourceKey]}
+            data={props.data}
+            showSteps={props.showsteps}
           />
         );
       })}
@@ -168,7 +173,7 @@ export function ChatWindow(props: {
 }) {
   const [tabValue, setTabValue] = useState("react");
   const [showSteps, setShowSteps] = useState(false);
-  const [data, setData] = useState<StreamEvent[]>([]);
+  const [data, setData] = useState<string[]>([]);
 
   const handleTabChange = (value: string) => {
     setTabValue(value);
@@ -206,15 +211,38 @@ export function ChatWindow(props: {
     },
     streamProtocol: "data",
     onFinish: () => {
-      chat.setData([]);
+      chat.setData([
+        {
+          type: "langchain_event",
+          value: {
+            event: "on_chain_start",
+            name: "agent",
+            data: {
+              input: {
+                messages: [
+                  {
+                    lc: 1,
+                    type: "constructor",
+                    id: ["langchain_core", "messages", "HumanMessage"],
+                    kwargs: {
+                      content: "How many frames is shieks down b?",
+                      additional_kwargs: {},
+                      response_metadata: {},
+                      id: "3674d4fa-cf32-488b-8e70-234cedfd7aa1",
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      ]);
     },
 
     onError: (e) => console.log(e),
   });
 
-  useEffect(() => {
-    console.log(chat.data);
-  }, [chat.data]);
+  useEffect(() => {}, [chat.data]);
 
   console.log(chat.data);
 
@@ -242,6 +270,8 @@ export function ChatWindow(props: {
             messages={chat.messages}
             emptyStateComponent={props.emptyStateComponent}
             sourcesForMessages={sourcesForMessages}
+            data={chat.data}
+            showsteps={showSteps}
           />
         )
       }
