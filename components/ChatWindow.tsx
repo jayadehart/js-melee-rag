@@ -211,32 +211,7 @@ export function ChatWindow(props: {
     },
     streamProtocol: "data",
     onFinish: () => {
-      chat.setData([
-        {
-          type: "langchain_event",
-          value: {
-            event: "on_chain_start",
-            name: "agent",
-            data: {
-              input: {
-                messages: [
-                  {
-                    lc: 1,
-                    type: "constructor",
-                    id: ["langchain_core", "messages", "HumanMessage"],
-                    kwargs: {
-                      content: "How many frames is shieks down b?",
-                      additional_kwargs: {},
-                      response_metadata: {},
-                      id: "3674d4fa-cf32-488b-8e70-234cedfd7aa1",
-                    },
-                  },
-                ],
-              },
-            },
-          },
-        },
-      ]);
+      chat.setData([]);
     },
 
     onError: (e) => console.log(e),

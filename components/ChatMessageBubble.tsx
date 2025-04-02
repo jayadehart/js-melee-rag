@@ -18,7 +18,11 @@ export function ChatMessageBubble(props: {
   const latestEvent = useMemo(() => {
     if (props.data) {
       const obj = props.data[props.data.length - 1] as any;
-      return obj.value.name;
+      if (obj) {
+        return obj.value.name;
+      } else {
+        return null;
+      }
     }
   }, [props.data]);
 

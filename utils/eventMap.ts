@@ -13,4 +13,8 @@ export const eventMessageMap = new Map([
   ["ChannelWrite<__start__:agent>", "Initializing agent process"],
   ["ChannelWrite<...,agent>", "Passing data to agent"],
   ["ChannelWrite<...,tools>", "Passing data to tools"],
+  ["agent", "Analyzing context"],
+  ["shouldRetrieve", "Deciding next steps"],
+  ["retrieve", "Searching for context"],
+  ["extractRelevant", "Extracting relevant info"],
 ]);

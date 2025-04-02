@@ -1,29 +1,25 @@
 import { openAIModel as model } from "./models";
-import { ChatPromptTemplate } from "@langchain/core/prompts";
+import {
+  ChatPromptTemplate,
+  SystemMessagePromptTemplate,
+} from "@langchain/core/prompts";
 import { ToolNode, createReactAgent } from "@langchain/langgraph/prebuilt";
 import {
   AGENT_TEMPLATE,
+  END_NODE_TEMPLATE,
   MELEE_RAG_TEMPLATE,
   RAG_AGENT_TEMPLATE,
   RELEVENCE_EXTRACTOR_TEMPLATE,
 } from "./templates";
-import {
-  Annotation,
-  START,
-  END,
-  StateGraph,
-  Graph,
-} from "@langchain/langgraph";
+import { Annotation, START, END, StateGraph } from "@langchain/langgraph";
 import { SystemMessage } from "@langchain/core/messages";
 import { ChatOpenAI } from "@langchain/openai";
-import { createClient } from "@supabase/supabase-js";
-import { Client } from "pg";
 import "reflect-metadata";
 import { BaseMessage } from "@langchain/core/messages";
-import { getAgentToolkit } from "./agent";
+import { getAgentToolkit, getAgentToolkitWithoutSQL } from "./agent";
 import { z } from "zod";
 import { AIMessage } from "@langchain/langgraph-sdk";
-import { tool } from "@langchain/core/tools";
+import { Command } from "@langchain/langgraph";
 
 export const getExampleGraphAgent = async () => {
   const GraphState = Annotation.Root({
@@ -280,6 +276,14 @@ export const getGraphAgent = async () => {
     context: Annotation<string>({
       reducer: (x, y) => x.concat(y),
     }),
+    toolCalls: Annotation<{ tool: string; input: string }[]>({
+      reducer: (x, y) => x.concat(y),
+      default: () => [],
+    }),
+    loops: Annotation<number>({
+      reducer: (x, y) => y,
+      default: () => 0,
+    }),
   });
 
   const model = new ChatOpenAI({
@@ -288,13 +292,11 @@ export const getGraphAgent = async () => {
     streaming: true,
   });
 
-  const toolkit = await getAgentToolkit(model);
+  const toolkit = await getAgentToolkitWithoutSQL(model);
   const toolNode = new ToolNode<typeof GraphState.State>(toolkit);
   const modelWithTools = model.bindTools(toolkit);
 
   const agent = async (state: typeof GraphState.State) => {
-    console.log("---AGENT---");
-    console.log(state);
     const { context, messages } = state;
 
     if (messages.length === 0) {
@@ -303,47 +305,79 @@ export const getGraphAgent = async () => {
 
     const question = messages[0].content as string;
 
-    const prompt: ChatPromptTemplate =
-      ChatPromptTemplate.fromTemplate(RAG_AGENT_TEMPLATE);
-
-    console.log(prompt);
+    const prompt = SystemMessagePromptTemplate.fromTemplate(RAG_AGENT_TEMPLATE);
 
     const chain = prompt.pipe(modelWithTools);
+    const toolCallData =
+      state.toolCalls
+        .map(({ tool, input }) => `Tool: ${tool}, Input: ${input}`)
+        .join("\n") || "None";
+
     const response = await chain.invoke({
       question,
       context,
+      toolCallData,
     });
 
-    return {
-      messages: [response],
-    };
+    const formatted = await prompt.format({
+      question,
+      context,
+      toolCallData,
+    });
+
+    console.log(formatted);
+    //need to log the prompt with the variables included
+
+    return new Command({
+      update: {
+        messages: [response],
+        loops: state.loops + 1,
+      },
+      goto: "shouldRetrieve",
+    });
   };
 
-  const shouldRetrieve = (state: typeof GraphState.State): string => {
-    const { messages } = state;
-    console.log("---DECIDE TO RETRIEVE---");
-    console.log(state);
+  const shouldRetrieve = async (state: typeof GraphState.State) => {
+    const { messages, loops } = state;
 
     if (messages.length === 0) return END;
 
     const lastMessage = messages[messages.length - 1];
+
+    if (loops > 3) {
+      return new Command({
+        update: {
+          loops: loops + 1,
+        },
+        goto: "endNode",
+      });
+    }
 
     if (
       "tool_calls" in lastMessage &&
       Array.isArray(lastMessage.tool_calls) &&
       lastMessage.tool_calls.length
     ) {
-      console.log("---DECISION: RETRIEVE---");
-      return "retrieve";
+      return new Command({
+        update: {
+          toolCalls: lastMessage.tool_calls.map((toolCall) => ({
+            tool: toolCall.name,
+            input: JSON.stringify(toolCall.args),
+          })),
+        },
+        goto: "retrieve",
+      });
+    } else {
+      return new Command({
+        update: {
+          toolCalls: [{ tool: "none", query: "none" }],
+        },
+        goto: "end",
+      });
     }
-    console.log("---DECISION: END---");
-    return END;
   };
 
   const extractRelevant = async (state: typeof GraphState.State) => {
-    console.log("---EXTRACT---");
-    console.log(state);
-
     const { context, messages } = state;
 
     if (messages.length === 0) {
@@ -351,29 +385,75 @@ export const getGraphAgent = async () => {
     }
 
     const question = messages[0].content as string;
-    const toolCallMessage = messages[messages.length - 1];
+    const toolCallMessages = messages.filter((m) => "tool_call_id" in m);
+    const toolCallContent = toolCallMessages
+      .map((m) => m.content)
+      .filter((content) => typeof content === "string")
+      .join(" ");
 
     const prompt: ChatPromptTemplate = ChatPromptTemplate.fromTemplate(
       RELEVENCE_EXTRACTOR_TEMPLATE,
     );
 
+    const formatted = await prompt.format({
+      question,
+      context: toolCallContent,
+    });
+
+    console.log(formatted);
+
     const chain = prompt.pipe(model);
     const response = await chain.invoke({
       question,
-      context: toolCallMessage.content,
+      context: toolCallContent,
     });
+
+    console.log(response.content);
 
     return {
       context: response.content,
     };
   };
 
+  const endNode = async (state: typeof GraphState.State) => {
+    const { context, messages } = state;
+
+    if (messages.length === 0) {
+      throw new Error("No messages found in state");
+    }
+
+    const question = messages[0].content as string;
+
+    const prompt = SystemMessagePromptTemplate.fromTemplate(END_NODE_TEMPLATE);
+
+    const formatted = prompt.format({ question, context });
+    console.log(formatted);
+
+    const chain = prompt.pipe(modelWithTools);
+
+    const response = await chain.invoke({
+      question,
+      context,
+    });
+
+    return new Command({
+      update: {
+        messages: [response],
+        loops: state.loops + 1,
+      },
+      goto: "end",
+    });
+  };
+
   const workflow = new StateGraph(GraphState)
-    .addNode("agent", agent)
+    .addNode("agent", agent, { ends: ["shouldRetrieve"] })
+    .addNode("shouldRetrieve", shouldRetrieve, {
+      ends: ["retrieve", "endNode", END],
+    })
     .addNode("retrieve", toolNode)
     .addNode("extractRelevant", extractRelevant)
+    .addNode("endNode", endNode)
     .addEdge(START, "agent")
-    .addConditionalEdges("agent", shouldRetrieve)
     .addEdge("retrieve", "extractRelevant")
     .addEdge("extractRelevant", "agent");
 
