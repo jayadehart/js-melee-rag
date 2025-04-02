@@ -16,6 +16,7 @@ import { FakeListChatModel } from "@langchain/core/utils/testing";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 
 import { StreamData } from "ai";
+import { drawMermaid } from "@/utils/drawImage";
 
 const convertVercelMessageToLangChainMessage = (message: VercelChatMessage) => {
   if (message.role === "user") {
