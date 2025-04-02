@@ -3,7 +3,7 @@ import graph from "../../public/images/graph.png";
 
 const AboutPage = () => {
   return (
-    <div className="flex flex-col items-center border-1 border-black bg-gray-50 h-full rounded-sm gap-8 p-8 ">
+    <div className="flex flex-col items-center border-1 border-black bg-gray-50  rounded-sm gap-8 p-8 ">
       <h1 className="text-4xl">About This Project</h1>
 
       <h3 className="text-2xl">Super Smash Brothers Melee</h3>

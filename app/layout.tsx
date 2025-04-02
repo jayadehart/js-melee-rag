@@ -34,7 +34,7 @@ export default function RootLayout({
         <link rel="shortcut icon" href="/images/favicon.ico" />
       </head>
 
-      <body className={`${publicSans.className} `}>
+      <body className={`${publicSans.className} bg-customGray`}>
         <SidebarProvider>
           <NavSidebar />
           <SidebarInset className="bg-customGray">
