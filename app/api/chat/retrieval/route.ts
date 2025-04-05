@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Message as VercelChatMessage, LangChainAdapter } from "ai";
+import {
+  Message as VercelChatMessage,
+  LangChainAdapter,
+  createDataStream,
+} from "ai";
 
 import {
   AIMessage,
@@ -75,6 +79,25 @@ export async function POST(req: NextRequest) {
     );
 
     const data = new StreamData();
+
+    const testDataStream = createDataStream({
+      async execute(dataStream) {
+        const stream = agentToUse.streamEvents(
+          { messages: [latestMessage] },
+          { version: "v2", recursionLimit: 15 },
+        );
+        const addDataTransformer = new TransformStream({
+          async transform(chunk, controller) {
+            if (chunk.event !== "on_chat_model_stream") {
+              dataStream.writeData(chunk.data);
+            }
+            controller.enqueue(chunk);
+          },
+        });
+        const addDataStream = stream.pipeThrough(addDataTransformer);
+        dataStream.merge(addDataStream);
+      },
+    });
 
     const addDataStream = new TransformStream({
       async transform(chunk, controller) {

@@ -452,7 +452,7 @@ export const getGraphAgent = async () => {
     })
     .addNode("retrieve", toolNode)
     .addNode("extractRelevant", extractRelevant)
-    .addNode("endNode", endNode)
+    .addNode("endNode", endNode, { ends: ["end"] })
     .addEdge(START, "agent")
     .addEdge("retrieve", "extractRelevant")
     .addEdge("extractRelevant", "agent");
