@@ -71,33 +71,37 @@ export async function POST(req: NextRequest) {
 
     const graphAgent = await getGraphAgent();
 
+    //uncomment this to draw the mermaid
+    // await drawMermaid();
+
     const agentToUse = useCustom ? graphAgent : reactAgent;
 
     const stream = agentToUse.streamEvents(
       { messages: [latestMessage] },
-      { version: "v2", recursionLimit: 15 },
+      { version: "v2", recursionLimit: 20 },
     );
 
     const data = new StreamData();
 
-    const testDataStream = createDataStream({
-      async execute(dataStream) {
-        const stream = agentToUse.streamEvents(
-          { messages: [latestMessage] },
-          { version: "v2", recursionLimit: 15 },
-        );
-        const addDataTransformer = new TransformStream({
-          async transform(chunk, controller) {
-            if (chunk.event !== "on_chat_model_stream") {
-              dataStream.writeData(chunk.data);
-            }
-            controller.enqueue(chunk);
-          },
-        });
-        const addDataStream = stream.pipeThrough(addDataTransformer);
-        dataStream.merge(addDataStream);
-      },
-    });
+    //this is how you could do it if they update LangChainAdapter to not use the deprecated StreamData()
+    // const testDataStream = createDataStream({
+    //   async execute(dataStream) {
+    //     const stream = agentToUse.streamEvents(
+    //       { messages: [latestMessage] },
+    //       { version: "v2", recursionLimit: 15 },
+    //     );
+    //     const addDataTransformer = new TransformStream({
+    //       async transform(chunk, controller) {
+    //         if (chunk.event !== "on_chat_model_stream") {
+    //           dataStream.writeData(chunk.data);
+    //         }
+    //         controller.enqueue(chunk);
+    //       },
+    //     });
+    //     const addDataStream = stream.pipeThrough(addDataTransformer);
+    //     dataStream.merge(addDataStream);
+    //   },
+    // });
 
     const addDataStream = new TransformStream({
       async transform(chunk, controller) {

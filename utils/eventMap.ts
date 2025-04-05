@@ -17,4 +17,5 @@ export const eventMessageMap = new Map([
   ["shouldRetrieve", "Deciding next steps"],
   ["retrieve", "Searching for context"],
   ["extractRelevant", "Extracting relevant info"],
+  ["endNode", "Going out like a buster"],
 ]);

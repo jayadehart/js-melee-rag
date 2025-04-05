@@ -426,10 +426,9 @@ export const getGraphAgent = async () => {
 
     const prompt = SystemMessagePromptTemplate.fromTemplate(END_NODE_TEMPLATE);
 
-    const formatted = prompt.format({ question, context });
-    console.log(formatted);
+    const formatted = await prompt.format({ question, context });
 
-    const chain = prompt.pipe(modelWithTools);
+    const chain = prompt.pipe(model);
 
     const response = await chain.invoke({
       question,
@@ -452,7 +451,7 @@ export const getGraphAgent = async () => {
     })
     .addNode("retrieve", toolNode)
     .addNode("extractRelevant", extractRelevant)
-    .addNode("endNode", endNode, { ends: ["end"] })
+    .addNode("endNode", endNode, { ends: [END] })
     .addEdge(START, "agent")
     .addEdge("retrieve", "extractRelevant")
     .addEdge("extractRelevant", "agent");
