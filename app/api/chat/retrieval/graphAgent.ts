@@ -325,9 +325,6 @@ export const getGraphAgent = async () => {
       toolCallData,
     });
 
-    console.log(formatted);
-    //need to log the prompt with the variables included
-
     return new Command({
       update: {
         messages: [response],
@@ -434,6 +431,8 @@ export const getGraphAgent = async () => {
       question,
       context,
     });
+
+    console.log(response);
 
     return new Command({
       update: {

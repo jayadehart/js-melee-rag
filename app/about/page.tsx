@@ -18,8 +18,8 @@ const AboutPage = () => {
       <h3 className="text-2xl">RAG (Retrieval Augmented Generation)</h3>
       <div>
         Retrieval Augmented Generation is a technique used to enhance large
-        language models`&apos; ability to answer questions about a specific
-        subject or set of reference materials. You use the user`&apos;s query to
+        language models&apos; ability to answer questions about a specific
+        subject or set of reference materials. You use the user&apos;s query to
         search your reference material, provide the search output to the LLM,
         and have it generate a response based on that context. One of the most
         common query tools is a Vector Embedded Database. To start, you divide
@@ -32,7 +32,7 @@ const AboutPage = () => {
 
       <h3 className="text-2xl">Agentic Workflows</h3>
       <div>
-        An AI `&apos;Agent`&apos; is distinguished from LLMs or simple AI
+        An AI &apos;Agent&apos; is distinguished from LLMs or simple AI
         pipelines by its ability to make decisions. LangGraph is a popular
         framework for creating AI agents. It provides a graph-based approach to
         agents. Each LangGraph agent can be represented as a set of nodes and
