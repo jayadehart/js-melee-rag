@@ -1,7 +1,9 @@
 "use client";
 
+import type React from "react";
+
 import { useChat } from "@ai-sdk/react";
-import { type UIMessage, type Message } from "ai";
+import type { UIMessage } from "ai";
 import { useEffect, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
@@ -9,13 +11,15 @@ import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 import { ChatMessageBubble } from "@/components/ChatMessageBubble";
 import { IntermediateStep } from "./IntermediateStep";
 import { Button } from "./ui/button";
-import { ArrowDown, LoaderCircle, Paperclip } from "lucide-react";
+import { ArrowDown, LoaderCircle } from "lucide-react";
 
 import { cn } from "@/utils/cn";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "./ui/switch";
-import { StreamEvent } from "@langchain/core/tracers/log_stream";
 import type { JSONValue } from "ai";
+import Image from "next/image";
+import falcon from "../public/images/falcon.png";
+import samus from "../public/images/samus.png";
 
 function ChatMessages(props: {
   messages: UIMessage[];
@@ -61,6 +65,7 @@ export function ChatInput(props: {
   actions?: ReactNode;
 }) {
   const disabled = props.loading && props.onStop == null;
+
   return (
     <form
       onSubmit={(e) => {
@@ -82,10 +87,8 @@ export function ChatInput(props: {
           onChange={props.onChange}
           className="border-none outline-none bg-transparent p-4"
         />
-
-        <div className="flex justify-between ml-4 mr-2 mb-2">
+        <div className="flex justify-between sm:ml-4 mr-2 mb-2">
           <div className="flex gap-3">{props.children}</div>
-
           <div className="flex gap-2 self-end">
             {props.actions}
             <Button type="submit" className="self-end" disabled={disabled}>
@@ -95,7 +98,7 @@ export function ChatInput(props: {
                   <span className="sr-only">Loading...</span>
                 </span>
               ) : (
-                <span>Send</span>
+                <span className="rounded-md">Send</span>
               )}
             </Button>
           </div>
@@ -150,10 +153,10 @@ export function ChatLayout(props: { content: ReactNode; footer: ReactNode }) {
     <StickToBottom>
       <StickyToBottomContent
         className="absolute inset-0"
-        contentClassName="py-8 px-2"
+        contentClassName="py-4 sm:py-8 px-2"
         content={props.content}
         footer={
-          <div className="sticky bottom-8 px-2">
+          <div className="sticky bottom-8 px-2 w-full max-w-[100vw] rounded-lg">
             <ScrollToBottom className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4" />
             {props.footer}
           </div>
@@ -258,19 +261,53 @@ export function ChatWindow(props: {
           loading={chat.isLoading || intermediateStepsLoading}
           placeholder={props.placeholder ?? "What's it like to be a pirate?"}
         >
-          <div className="flex gap-3 items-center -ml-2">
-            <Tabs defaultValue="react" onValueChange={handleTabChange}>
-              <TabsList>
-                <TabsTrigger value="react">ReAct Agent</TabsTrigger>
-                <TabsTrigger value="custom">Custom Agent</TabsTrigger>
+          <div className="flex items-stretch">
+            <Tabs
+              defaultValue="react"
+              onValueChange={handleTabChange}
+              className="w-full sm:w-auto"
+            >
+              <TabsList className="w-full sm:w-auto">
+                <TabsTrigger
+                  value="react"
+                  className="text-xs sm:text-sm  sm:flex-none rounded-md"
+                >
+                  <Image
+                    src={falcon}
+                    height={20}
+                    width={20}
+                    alt="ReAct Agent"
+                    className="sm:hidden"
+                  />
+                  <span className="ml-1 sm:hidden">ReAct</span>
+                  <span className="hidden sm:inline">ReAct Agent</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="custom"
+                  className="text-xs sm:text-sm  sm:flex-none"
+                >
+                  <Image
+                    src={samus}
+                    height={20}
+                    width={20}
+                    alt="Custom Agent"
+                    className="sm:hidden"
+                  />
+                  <span className="ml-1 sm:hidden">Custom</span>
+                  <span className="hidden sm:inline">Custom Agent</span>
+                </TabsTrigger>
               </TabsList>
             </Tabs>
-            <div className="flex gap-3">
+            <div className="flex gap-2 items-center">
               <Switch
                 checked={showSteps}
                 onCheckedChange={handleCheckedChange}
+                className="scale-85 sm:scale-100"
               />
-              <div className="text-sm">Show agent status</div>
+              <div className="text-xs sm:text-sm whitespace-nowrap">
+                <span className="hidden sm:inline">Show Agent Status</span>
+                <span className="sm:hidden">Show Status</span>
+              </div>
             </div>
           </div>
         </ChatInput>

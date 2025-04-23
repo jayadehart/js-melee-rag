@@ -397,15 +397,11 @@ export const getGraphAgent = async () => {
       context: toolCallContent,
     });
 
-    console.log(formatted);
-
     const chain = prompt.pipe(model);
     const response = await chain.invoke({
       question,
       context: toolCallContent,
     });
-
-    console.log(response.content);
 
     return {
       context: response.content,

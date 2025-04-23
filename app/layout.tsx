@@ -41,7 +41,7 @@ export default function RootLayout({
             <SidebarTrigger className="hover:bg-gray-500 rounded-sm ml-1 mt-1" />
             <div className="bg-customGray grid grid-rows-[auto,1fr] h-full">
               <div className="grid grid-cols-[1fr,auto] gap-2 p-4">
-                <nav className="flex flex-col items-center justify-center text-7xl text-center">
+                <nav className="flex flex-col items-center justify-center sm:text-7xl text-center text-4xl">
                   <div className="outline-container">
                     <h1 className={`${meleeFont.className} element`}>
                       SUPER RAG BROS
@@ -55,7 +55,7 @@ export default function RootLayout({
                 <div className="flex justify-center items-center"></div>
               </div>
               <div
-                className="bg-customDark mx-4 xl:ml-auto xl:mr-auto xl:w-2/3 2xl:w-1/2  relative grid rounded-t-2xl border border-customDark border-b-0"
+                className="bg-customDark mx-2 sm:mx-4 xl:ml-auto xl:mr-auto xl:w-2/3 2xl:w-1/2  relative grid rounded-t-2xl border border-customDark border-b-0"
                 style={{
                   backgroundImage:
                     "linear-gradient(to right, rgba(8,21,38, 0.5) 0 100%), url('/textures/testbg.png')",

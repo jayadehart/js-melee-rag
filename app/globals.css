@@ -137,6 +137,20 @@
   -webkit-text-stroke: 0.2rem black;
 }
 
+@media (max-width: 640px) {
+  .outline-container {
+    height: 3rem;
+  }
+
+  .element {
+    font-size: 3rem;
+  }
+
+  .element:nth-child(2) {
+    -webkit-text-stroke: 0.1rem black;
+  }
+}
+
 @layer base {
   * {
     @apply border-border;

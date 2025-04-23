@@ -39,7 +39,13 @@ export function ChatMessageBubble(props: {
       <div className="whitespace-pre-wrap flex">
         {props.message.role !== "user" && (
           <div className="-ml-16  -mt-4 rounded-full w-16 h-11 flex-shrink-0 flex items-center justify-center">
-            <Image src={cpu} alt="melee cpu image" height={60} width={60} />
+            <Image
+              src={cpu}
+              alt="melee cpu image"
+              height={60}
+              width={60}
+              className="hidden sm:block"
+            />
           </div>
         )}
         {props.data &&
@@ -53,7 +59,13 @@ export function ChatMessageBubble(props: {
         <span>{props.message.content}</span>
         {props.message.role == "user" && (
           <div className="-mr-16 -mt-4 rounded-full w-16 h-11 flex-shrink-0 flex items-center justify-center">
-            <Image src={hmn} alt="melee human image" height={60} width={60} />
+            <Image
+              src={hmn}
+              alt="melee human image"
+              height={60}
+              width={60}
+              className="hidden sm:block"
+            />
           </div>
         )}
       </div>
